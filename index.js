@@ -5,7 +5,7 @@ const CONFIG = {
   port: 25565,
   username: 'AFK_Bot_247',
   password: 'BotPassword123!', // The password for /register and /login
-  version: '1.20.1'           // Set a fixed base version for ViaVersion
+  version: '1.21.11'           // Set a fixed base version for ViaVersion
 };
 
 function startBot() {
