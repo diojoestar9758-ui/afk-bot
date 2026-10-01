@@ -11,7 +11,7 @@ const CONFIG = {
   host: 'themellowsmp.mcsh.io',
   port: 25565,
   username: 'AFK_Bot_247',
-  password: 'YOUR_ACTUAL_PASSWORD_HERE' // Replace with the password you registered in-game
+  password: 'BotPassword123!' // Replace with the password you registered in-game
 };
 
 function startBot() {
