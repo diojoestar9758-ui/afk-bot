@@ -1,40 +1,43 @@
 const mineflayer = require('mineflayer');
 const express = require('express');
 
-// 1. DUMMY WEB SERVER (Fixes Render Port Scan Timeout)
+// Dummy HTTP server for Render
 const app = express();
 const PORT = process.env.PORT || 10000;
+app.get('/', (req, res) => res.send('AFK Bot active!'));
+app.listen(PORT, '0.0.0.0', () => console.log(`Web server listening on port ${PORT}`));
 
-app.get('/', (req, res) => res.send('Bot is active!'));
-
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Render Web Server listening on port ${PORT}`);
-});
-
-// 2. MINECRAFT BOT CONFIGURATION
 const CONFIG = {
   host: 'themellowsmp.mcsh.io',
   port: 25565,
   username: 'AFK_Bot_247',
-  password: 'BotPassword123!',
-  checkTimeoutInterval: 60000,
-  hideErrors: false
+  password: 'YOUR_ACTUAL_PASSWORD_HERE' // Replace with the password you registered in-game
 };
 
 function startBot() {
-  console.log('Connecting to Minecraft server...');
+  console.log('Connecting to server...');
   const bot = mineflayer.createBot(CONFIG);
 
-  bot.on('spawn', () => {
-    console.log('>>> BOT CONNECTED! SERVER IS AWAKE <<<');
+  // Automatically log in whenever a login message appears in chat
+  bot.on('messagestr', (message) => {
+    console.log('[SERVER CHAT]:', message);
 
-    // Authentication delay
-    setTimeout(() => {
-      bot.chat(`/register ${CONFIG.password} ${CONFIG.password}`);
+    const msgLower = message.toLowerCase();
+    if (msgLower.includes('/login') || msgLower.includes('please log in') || msgLower.includes('type /login')) {
+      console.log('>>> LOGIN PROMPT DETECTED! SENDING PASSWORD <<<');
       bot.chat(`/login ${CONFIG.password}`);
-    }, 3000);
+    }
+  });
 
-    // Anti-AFK jump timer
+  bot.on('spawn', () => {
+    console.log('>>> BOT JOINED SERVER SPOTS <<<');
+
+    // Immediate backup login send
+    setTimeout(() => {
+      bot.chat(`/login ${CONFIG.password}`);
+    }, 1000);
+
+    // Keep-alive jump loop
     setTimeout(() => {
       setInterval(() => {
         if (bot && bot.entity) {
@@ -42,33 +45,16 @@ function startBot() {
           setTimeout(() => bot.setControlState('jump', false), 500);
         }
       }, 45000);
-    }, 10000);
+    }, 5000);
   });
 
-  // Catch kicking messages
-  bot.on('kicked', (reason) => {
-    console.log('>>> KICKED BY SERVER:', JSON.stringify(reason));
-  });
-
-  // Handle connection drops without crashing Node
-  bot.on('end', (reason) => {
-    console.log('Disconnected from server:', reason, 'Retrying in 15s...');
-    setTimeout(startBot, 15000);
-  });
-
-  // Suppress uncaught stream errors (Fixes EPIPE crash)
-  bot.on('error', (err) => {
-    console.log('Mineflayer connection error:', err.message);
-  });
+  bot.on('kicked', (reason) => console.log('>>> KICKED:', JSON.stringify(reason)));
+  bot.on('end', () => setTimeout(startBot, 10000));
+  bot.on('error', (err) => console.log('Bot Error:', err.message));
 }
 
-// Catch socket/stream-level crashes globally so Render doesn't restart
 process.on('uncaughtException', (err) => {
-  if (err.code === 'EPIPE') {
-    console.log('Caught EPIPE write error (server closed pipe). Reconnecting...');
-  } else {
-    console.error('Uncaught Exception:', err);
-  }
+  if (err.code !== 'EPIPE') console.error('Uncaught Exception:', err);
 });
 
 startBot();
